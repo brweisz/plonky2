@@ -51,8 +51,7 @@ macro_rules! get_gate_tag_impl {
             Ok(tag)
         } else)*
         {
-            log::log!(
-                log::Level::Error,
+            println!(
                 "attempted to serialize gate with id `{}` which is unsupported by this gate serializer",
                 $gate.0.id()
             );
@@ -79,7 +78,7 @@ macro_rules! impl_gate_serializer {
 
         fn write_gate(
             &self,
-            buf: &mut $crate::util::serialization::gate_serialization::Vec<u8>,
+            buf: &mut Vec<u8>,
             gate: &$crate::gates::gate::GateRef<F, D>,
             common: &$crate::plonk::circuit_data::CommonCircuitData<F, D>,
         ) -> $crate::util::serialization::IoResult<()> {

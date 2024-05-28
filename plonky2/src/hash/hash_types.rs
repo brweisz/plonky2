@@ -192,20 +192,51 @@ impl<F: RichField, const N: usize> GenericHashOut<F> for BytesHash<N> {
     }
 }
 
+use serde::de::{self, Visitor};
+use std::fmt;
+
 impl<const N: usize> Serialize for BytesHash<N> {
-    fn serialize<S>(&self, _serializer: S) -> Result<S::Ok, S::Error>
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            serializer.serialize_bytes(&self.0)
+        }
+    }
+
+struct ByteHashVisitor<const N: usize>;
+
+impl<'de, const N: usize> Visitor<'de> for ByteHashVisitor<N> {
+    type Value = BytesHash<N>;
+
+    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        write!(formatter, "an array containing exactly {} bytes", N)
+    }
+
+    fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
+        where
+            A: de::SeqAccess<'de>, {
+        let mut bytes = [0u8; N];
+        for i in 0..N {
+            bytes[i] = seq.next_element().unwrap().unwrap();
+        }
+        Ok(BytesHash(bytes))
+    }
+
+    fn visit_bytes<E>(self, s: &[u8]) -> Result<Self::Value, E>
     where
-        S: Serializer,
+        E: de::Error,
     {
-        todo!()
+        let bytes = s.try_into().unwrap();
+        Ok(BytesHash(bytes))
     }
 }
 
 impl<'de, const N: usize> Deserialize<'de> for BytesHash<N> {
-    fn deserialize<D>(_deserializer: D) -> Result<Self, D::Error>
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
     {
-        todo!()
+        deserializer.deserialize_seq(ByteHashVisitor::<N>)
     }
 }
